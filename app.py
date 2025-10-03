@@ -5,14 +5,14 @@ from requests.auth import HTTPBasicAuth
 app = Flask(__name__)
 
 # ----------------- eBay credentials -----------------
-EBAY_CLIENT_ID = 'azglobal-test-PRD-355d33c31-6ff93df8'
-EBAY_CLIENT_SECRET = 'PRD-55d33c314325-bba7-4498-80c8-e261'
+EBAY_CLIENT_ID = ''
+EBAY_CLIENT_SECRET = ''
 EBAY_API_URL = "https://api.ebay.com/buy/browse/v1/item_summary/search"
 EBAY_OAUTH_URL = "https://api.ebay.com/identity/v1/oauth2/token"
 
 # ----------------- Pokémon Price Tracker API -----------------
 POKEMON_PRICE_TRACKER_URL = "https://www.pokemonpricetracker.com/api/v2/cards"
-POKEMON_PRICE_TRACKER_KEY = "pokeprice_pro_557ab400880eb696e5fdf0465e13ddeea031df29402dab12"
+POKEMON_PRICE_TRACKER_KEY = ""
 
 # ----------------- Helper Functions -----------------
 def get_ebay_oauth_token():
