@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pokémon eBay & Price Tracker</title>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px;}
+h1 { text-align: center; margin-bottom: 20px;}
+form { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px;}
+input, select, button { padding: 10px; font-size: 14px;}
+button { background-color: #ffcb05; border: none; cursor: pointer; font-weight: bold; transition: 0.2s;}
+button:hover { background-color: #ffaa00;}
+#results { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;}
+.card { background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; transition: transform 0.2s; position: relative;}
+.card:hover { transform: translateY(-5px);}
+.card img { width: 100%; object-fit: cover; height: 200px;}
+.card-content { padding: 15px; display: flex; flex-direction: column; gap: 5px;}
+.card-content h2 { font-size: 18px; margin: 0;}
+.card-content p { margin: 3px 0; font-size: 14px;}
+details summary { cursor: pointer; font-weight: bold;}
+.spinner { border: 6px solid #f3f3f3; border-top: 6px solid #ffcb05; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 50px auto;}
+@keyframes spin {0% { transform: rotate(0deg);}100% { transform: rotate(360deg);}}
+.badge { position: absolute; top: 10px; right: 10px; background: #ff4d4d; color: #fff; padding: 5px 10px; border-radius: 8px; font-weight: bold; font-size: 12px;}
+</style>
+</head>
+<body>
+
+<h1>Pokémon eBay & Price Tracker</h1>
+
+<form id="search-form">
+  <input type="text" id="query" placeholder="Search card name" required>
+  <input type="number" id="min_price" placeholder="Min price">
+  <input type="number" id="max_price" placeholder="Max price">
+  <select id="listing_type">
+    <option value="">Any Listing Type</option>
+    <option value="FIXED_PRICE">Buy It Now</option>
+    <option value="AUCTION">Auction</option>
+  </select>
+  <select id="location">
+    <option value="">Any Location</option>
+    <option value="US">US</option>
+    <option value="NA">US + Canada</option>
+  </select>
+  <label><input type="checkbox" id="fetch_price_flag"> Fetch Pokémon Price & Discount</label>
+  <button type="submit">Search</button>
+</form>
+
+<div id="results"></div>
+
+<script>
+document.getElementById("search-form").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const query = document.getElementById("query").value;
+  const min_price = document.getElementById("min_price").value || 0;
+  const max_price = document.getElementById("max_price").value || 10000;
+  const location = document.getElementById("location").value;
+  const listing_type = document.getElementById("listing_type").value;
+  const fetch_price_flag = document.getElementById("fetch_price_flag").checked;
+
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    const response = await fetch("/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, min_price, max_price, listing_type, location, fetch_price_flag })
+    });
+
+    const data = await response.json();
+    resultsDiv.innerHTML = "";
+
+    if (!data.length) {
+      resultsDiv.innerHTML = "<p style='text-align:center'>No results found.</p>";
+      return;
+    }
+
+    data.forEach(item => {
+      const card = document.createElement("div");
+      card.classList.add("card");
+
+      // Top Deals badge
+      let badgeHTML = "";
+      if(item.discount && item.discount >= 20){
+        badgeHTML = `<div class="badge">${item.discount}% OFF</div>`;
+      }
+
+      card.innerHTML = `
+        ${badgeHTML}
+        <img src="${item.image || 'https://via.placeholder.com/225'}" alt="Card Image">
+        <div class="card-content">
+          <h2><a href="${item.url}" target="_blank">${item.title}</a></h2>
+          <p><strong>eBay Price:</strong> ${item.ebay_price || 'N/A'} ${item.currency || ''}</p>
+          <p><strong>Pokémon Price:</strong> ${item.tracker_price !== undefined ? item.tracker_price : 'N/A'}</p>
+          <p><strong>Discount vs Pokémon Price:</strong> ${item.discount !== undefined ? item.discount + '%' : 'N/A'}</p>
+          <p><strong>Condition:</strong> ${item.condition || 'N/A'}</p>
+          <p><strong>Location:</strong> ${item.location || 'Unknown'}</p>
+          ${item.extract_item_specifics && Object.keys(item.extract_item_specifics).length > 0 ? `
+            <details>
+              <summary>Item Specifics</summary>
+              <ul>
+                ${Object.entries(item.extract_item_specifics)
+                  .map(([key, value]) => `<li><strong>${key}:</strong> ${value}</li>`)
+                  .join("")}
+              </ul>
+            </details>
+          ` : ""}
+        </div>
+      `;
+      resultsDiv.appendChild(card);
+    });
+  } catch (err) {
+    console.error(err);
+    resultsDiv.innerHTML = "<p style='text-align:center'>Error fetching results. Try again.</p>";
+  }
+});
+</script>
+
+</body>
+</html>
